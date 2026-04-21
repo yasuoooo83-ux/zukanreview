@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>自己紹介アプリ 相互評価</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&family=DM+Mono:wght@400;500&display=swap');
+
+/* ── デプロイ後にここを書き換える ── */
+/* GAS_URL は下の <script> 内で設定します  */
+
+:root {
+  --bg: #0d0d10;
+  --surface: #16161e;
+  --surface2: #1e1e28;
+  --border: #2a2a38;
+  --accent: #5b8dee;
+  --accent2: #ee8d5b;
+  --accent3: #5beead;
+  --text: #ededf5;
+  --muted: #6e6e8a;
+  --star-on: #ffc55b;
+  --star-off: #2a2a38;
+  --danger: #ee5b5b;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Noto Sans JP', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  padding-bottom: 100px;
+}
+
+/* ── header ── */
+.site-header {
+  text-align: center;
+  padding: 40px 20px 28px;
+  position: relative;
+  overflow: hidden;
+}
+.site-header::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 70% 50% at 50% 0%, rgba(91,141,238,.15) 0%, transparent 70%);
+  pointer-events: none;
+}
+.header-mono {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  letter-spacing: .25em;
+  color: var(--accent);
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+.site-header h1 {
+  font-size: clamp(22px, 5vw, 36px);
+  font-weight: 900;
+  letter-spacing: -.02em;
+  line-height: 1.2;
+}
+.site-header h1 em { color: var(--accent2); font-style: normal; }
+
+/* ── reviewer bar ── */
+.reviewer-bar {
+  max-width: 700px;
+  margin: 0 auto 20px;
+  padding: 0 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.reviewer-bar label {
+  font-size: 12px;
+  color: var(--muted);
+  white-space: nowrap;
+  font-family: 'DM Mono', monospace;
+}
+.reviewer-bar input {
+  width: 100px;
+  background: var(--surface2);
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 12px;
+  color: var(--text);
+  font-family: 'DM Mono', monospace;
+  font-size: 15px;
+  outline: none;
+  transition: border-color .2s;
+}
+.reviewer-bar input:focus { border-color: var(--accent); }
+.status-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--muted);
+  flex-shrink: 0;
+  transition: background .3s;
+}
+.status-dot.ok  { background: var(--accent3); box-shadow: 0 0 6px var(--accent3); }
+.status-dot.err { background: var(--danger); }
+.status-text {
+  font-size: 11px;
+  color: var(--muted);
+  font-family: 'DM Mono', monospace;
+}
+
+/* ── tabs ── */
+.tabs {
+  display: flex;
+  max-width: 700px;
+  margin: 0 auto 20px;
+  padding: 0 16px;
+  gap: 6px;
+}
+.tab-btn {
+  flex: 1;
+  padding: 10px 4px;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  color: var(--muted);
+  font-family: 'Noto Sans JP', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all .2s;
+}
+.tab-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+/* ── panel ── */
+.panel { display: none; }
+.panel.active { display: block; }
+
+/* ── card ── */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 20px;
+  max-width: 700px;
+  margin: 0 auto 14px;
+}
+.card-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  letter-spacing: .15em;
+  color: var(--accent);
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+
+/* ── eval grid ── */
+.eval-wrap { max-width: 700px; margin: 0 auto 14px; padding: 0 16px; }
+
+.eval-header {
+  display: grid;
+  grid-template-columns: 56px 1fr 1fr 1fr 56px 28px;
+  gap: 6px;
+  padding: 6px 12px;
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  letter-spacing: .08em;
+  color: var(--muted);
+  background: var(--surface2);
+  border-radius: 10px 10px 0 0;
+  border: 1px solid var(--border);
+}
+
+.eval-row {
+  display: grid;
+  grid-template-columns: 56px 1fr 1fr 1fr 56px 28px;
+  gap: 6px;
+  align-items: center;
+  padding: 8px 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-top: none;
+  transition: background .15s;
+}
+.eval-row:hover { background: var(--surface2); }
+.eval-row:last-of-type { border-radius: 0 0 10px 10px; }
+
+.student-no {
+  font-family: 'DM Mono', monospace;
+  font-size: 14px;
+  color: var(--accent2);
+  font-weight: 500;
+}
+
+/* mini stars (rtl trick) */
+.mini-stars { display: flex; gap: 2px; direction: rtl; }
+.mini-stars input[type="radio"] { display: none; }
+.mini-stars label {
+  font-size: 16px;
+  cursor: pointer;
+  color: var(--star-off);
+  transition: color .1s;
+  line-height: 1;
+}
+.mini-stars label:hover,
+.mini-stars label:hover ~ label,
+.mini-stars input[type="radio"]:checked + label,
+.mini-stars input[type="radio"]:checked ~ label { color: var(--star-on); }
+
+.row-total {
+  font-family: 'DM Mono', monospace;
+  font-size: 14px;
+  color: var(--accent3);
+  text-align: center;
+}
+
+.cmt-toggle {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--muted);
+  font-size: 14px;
+  width: 24px; height: 24px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all .15s;
+  padding: 0;
+}
+.cmt-toggle:hover, .cmt-toggle.open { border-color: var(--accent2); color: var(--accent2); }
+
+.cmt-row {
+  display: none;
+  padding: 8px 12px 10px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-top: none;
+}
+.cmt-row.open { display: block; }
+.cmt-row textarea {
+  width: 100%;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 10px;
+  color: var(--text);
+  font-family: 'Noto Sans JP', sans-serif;
+  font-size: 12px;
+  resize: vertical;
+  min-height: 56px;
+  outline: none;
+  transition: border-color .2s;
+}
+.cmt-row textarea:focus { border-color: var(--accent); }
+.cmt-row label {
+  font-size: 11px;
+  color: var(--muted);
+  display: block;
+  margin-bottom: 4px;
+  font-family: 'DM Mono', monospace;
+}
+
+/* ── vote ── */
+.vote-meta {
+  max-width: 700px;
+  margin: 0 auto 12px;
+  padding: 0 16px;
+  font-size: 13px;
+  color: var(--muted);
+}
+.vote-meta strong { color: var(--accent2); }
+#vote-sel-count { font-family: 'DM Mono', monospace; color: var(--accent2); margin-left: 8px; }
+
+.vote-grid {
+  max-width: 700px;
+  margin: 0 auto 16px;
+  padding: 0 16px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+  gap: 7px;
+}
+.vote-chip {
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 4px;
+  text-align: center;
+  cursor: pointer;
+  font-family: 'DM Mono', monospace;
+  font-size: 13px;
+  color: var(--muted);
+  transition: all .15s;
+  user-select: none;
+  position: relative;
+}
+.vote-chip:hover { border-color: var(--accent2); color: var(--accent2); }
+.vote-chip.sel {
+  background: rgba(238,141,91,.12);
+  border-color: var(--accent2);
+  color: var(--accent2);
+}
+.vote-chip.sel::after {
+  content: '✓';
+  position: absolute;
+  top: 3px; right: 5px;
+  font-size: 9px;
+  color: var(--accent2);
+}
+
+/* ── results ── */
+.rank-list { display: flex; flex-direction: column; gap: 10px; }
+.rank-item { }
+.rank-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 4px;
+}
+.rank-no {
+  font-family: 'DM Mono', monospace;
+  font-size: 14px;
+  color: var(--accent2);
+}
+.rank-pos {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  color: var(--muted);
+  margin-right: 6px;
+}
+.rank-val {
+  font-family: 'DM Mono', monospace;
+  font-size: 13px;
+  color: var(--accent3);
+}
+.bar-track { height: 6px; background: var(--surface2); border-radius: 99px; overflow: hidden; }
+.bar-fill  { height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent2)); border-radius: 99px; transition: width .6s ease; }
+
+.comments-box {
+  margin-top: 6px;
+  background: var(--surface2);
+  border-radius: 8px;
+  padding: 8px 10px;
+  max-height: 80px;
+  overflow-y: auto;
+}
+.comment-item {
+  font-size: 11px;
+  color: var(--muted);
+  border-bottom: 1px solid var(--border);
+  padding: 3px 0;
+}
+.comment-item:last-child { border-bottom: none; }
+
+.refresh-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: 700px;
+  margin: 0 auto 14px;
+  padding: 0 16px;
+}
+.refresh-btn {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--muted);
+  padding: 6px 14px;
+  font-size: 12px;
+  font-family: 'DM Mono', monospace;
+  cursor: pointer;
+  transition: all .2s;
+}
+.refresh-btn:hover { border-color: var(--accent3); color: var(--accent3); }
+.last-update { font-size: 11px; color: var(--muted); font-family: 'DM Mono', monospace; }
+
+/* ── buttons ── */
+.btn-row {
+  display: flex; gap: 10px; flex-wrap: wrap;
+  justify-content: center;
+  max-width: 700px; margin: 0 auto 18px; padding: 0 16px;
+}
+button.primary {
+  flex: 1; min-width: 130px;
+  padding: 13px 18px;
+  background: var(--accent); color: #fff;
+  border: none; border-radius: 12px;
+  font-family: 'Noto Sans JP', sans-serif; font-size: 14px; font-weight: 700;
+  cursor: pointer; transition: background .2s, transform .1s;
+}
+button.primary:hover { background: #4a78d4; }
+button.primary:active { transform: scale(.98); }
+button.primary:disabled { background: var(--border); color: var(--muted); cursor: not-allowed; }
+
+button.secondary {
+  flex: 1; min-width: 130px;
+  padding: 13px 18px;
+  background: transparent; color: var(--accent2);
+  border: 2px solid var(--accent2); border-radius: 12px;
+  font-family: 'Noto Sans JP', sans-serif; font-size: 14px; font-weight: 700;
+  cursor: pointer; transition: background .2s;
+}
+button.secondary:hover { background: rgba(238,141,91,.1); }
+
+/* ── toast ── */
+.toast {
+  position: fixed; bottom: 24px; left: 50%;
+  transform: translateX(-50%) translateY(60px);
+  background: var(--surface2); border: 1px solid var(--border);
+  color: var(--text); padding: 11px 22px;
+  border-radius: 40px; font-size: 13px; font-weight: 700;
+  opacity: 0; transition: opacity .3s, transform .3s;
+  pointer-events: none; z-index: 999; white-space: nowrap;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+.spinner {
+  display: inline-block; width: 14px; height: 14px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin .6s linear infinite;
+  vertical-align: middle; margin-right: 6px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+@media (max-width: 480px) {
+  .eval-header, .eval-row {
+    grid-template-columns: 44px 1fr 1fr 1fr 40px 24px;
+    font-size: 11px;
+  }
+  .mini-stars label { font-size: 14px; }
+}
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="header-mono">PEER REVIEW SYSTEM</div>
+  <h1>自己紹介アプリ<br><em>相互評価 & 投票</em></h1>
+</header>
+
+<!-- GAS URL 設定バナー（未設定時のみ表示） -->
+<div id="url-banner" style="max-width:700px;margin:0 auto 16px;padding:0 16px;display:none">
+  <div style="background:#2a1a0a;border:1px solid var(--accent2);border-radius:12px;padding:14px 18px;font-size:13px">
+    ⚠️ <strong style="color:var(--accent2)">GAS_URL が未設定です</strong><br>
+    <span style="color:var(--muted)">下の手順でデプロイURL を設定してください（このファイルの先頭付近 <code style="color:var(--accent3)">const GAS_URL</code> を書き換え）</span>
+  </div>
+</div>
+
+<!-- 評価者番号 -->
+<div class="reviewer-bar">
+  <label>出席番号</label>
+  <input type="text" id="my-no" placeholder="0012" maxlength="4">
+  <div class="status-dot" id="status-dot"></div>
+  <span class="status-text" id="status-text">未接続</span>
+</div>
+
+<!-- Tabs -->
+<div class="tabs">
+  <button class="tab-btn active" onclick="switchTab('eval')">⭐ 評価</button>
+  <button class="tab-btn" onclick="switchTab('vote')">🏆 投票</button>
+  <button class="tab-btn" onclick="askPassword()">📊 集計🔒</button>
+</div>
+
+<!-- パスワードモーダル -->
+<div id="pw-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:1000;align-items:center;justify-content:center;">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:28px 24px;width:300px;text-align:center;">
+    <div style="font-family:'DM Mono',monospace;font-size:11px;letter-spacing:.15em;color:var(--accent);margin-bottom:12px;">TEACHER ONLY</div>
+    <div style="font-size:16px;font-weight:700;margin-bottom:16px;">&#128274; 教員用パスワード</div>
+    <input type="password" id="pw-input" placeholder="パスワードを入力"
+      style="width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:8px;padding:10px 14px;color:var(--text);font-size:15px;outline:none;text-align:center;margin-bottom:8px;"
+      onkeydown="if(event.key==='Enter')checkPassword()">
+    <div id="pw-err" style="color:var(--danger);font-size:12px;height:18px;margin-bottom:8px;"></div>
+    <div style="display:flex;gap:8px;">
+      <button onclick="checkPassword()" style="flex:1;padding:10px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer;font-size:14px;">入る</button>
+      <button onclick="closePwModal()" style="flex:1;padding:10px;background:var(--surface2);color:var(--muted);border:1px solid var(--border);border-radius:8px;font-weight:700;cursor:pointer;font-size:14px;">キャンセル</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== EVAL ===== -->
+<div id="panel-eval" class="panel active">
+  <div class="card" style="max-width:700px;margin:0 auto 14px">
+    <div class="card-label">評価項目</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;font-size:12px;color:var(--muted)">
+      <div>📄 <strong style="color:var(--text)">内容</strong><br>わかりやすさ</div>
+      <div>🎨 <strong style="color:var(--text)">デザイン</strong><br>見た目の工夫</div>
+      <div>💡 <strong style="color:var(--text)">アイデア</strong><br>独自性・工夫</div>
+    </div>
+  </div>
+
+  <div class="eval-wrap">
+    <div class="eval-header">
+      <div>番号</div><div>内容★</div><div>デザイン★</div><div>アイデア★</div><div>合計</div><div></div>
+    </div>
+    <div id="eval-rows"></div>
+  </div>
+
+  <div class="btn-row">
+    <button class="primary" id="save-btn" onclick="saveAllEval()">
+      ✅ 全件送信
+    </button>
+  </div>
+  <p style="text-align:center;font-size:11px;color:var(--muted);margin-top:-10px">
+    ★をつけた作品はコメント必須です。
+  </p>
+</div>
+
+<!-- ===== VOTE ===== -->
+<div id="panel-vote" class="panel">
+  <div class="vote-meta">
+    <strong>最大3作品</strong>まで選べます。
+    <span id="vote-sel-count">0 / 3</span>
+  </div>
+  <div class="vote-grid" id="vote-grid"></div>
+  <div class="btn-row">
+    <button class="primary" onclick="saveVote()">🏆 投票を送信</button>
+    <button class="secondary" onclick="clearVote()">リセット</button>
+  </div>
+</div>
+
+<!-- ===== RESULT ===== -->
+<div id="panel-result" class="panel">
+  <div class="refresh-row">
+    <button class="refresh-btn" onclick="loadResults()">🔄 最新データ取得</button>
+    <span class="last-update" id="last-update">—</span>
+    <span id="load-spinner" style="display:none"><span class="spinner"></span></span>
+  </div>
+  <div class="card">
+    <div class="card-label">⭐ 評価スコアランキング（上位10）</div>
+    <div id="score-rank" class="rank-list"></div>
+  </div>
+  <div class="card">
+    <div class="card-label">🏆 人気投票ランキング（上位10）</div>
+    <div id="vote-rank" class="rank-list"></div>
+  </div>
+  <div class="btn-row">
+    <button class="secondary" onclick="exportCSV()">📊 CSVダウンロード</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ============================================================
+//  ★ ここにデプロイ後のGASウェブアプリURLを貼り付ける ★
+// ============================================================
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbxcCGCfsNe4bV3ceeO1tHYE_m8l3Pmy4ubvJoOvuynCxM3nU67guHkMdkJhR_txliz3Xw/exec';
+// ============================================================
+
+const TOTAL   = 37;
+const MAX_VOTE = 3;
+function pad(n) { return String(n).padStart(4,'0'); }
+const students = Array.from({length:TOTAL}, (_,i) => pad(i+1));
+
+let myVotes = [];
+let cachedResult = null;
+
+// ---- URL チェック ----
+window.addEventListener('DOMContentLoaded', () => {
+  if (GAS_URL === 'YOUR_GAS_WEB_APP_URL_HERE') {
+    document.getElementById('url-banner').style.display = 'block';
+    setStatus('err', 'GAS_URL未設定');
+  } else {
+    setStatus('ok', '接続準備OK');
+  }
+  buildEvalRows();
+  buildVoteGrid();
+});
+
+// ---- ステータス ----
+function setStatus(state, msg) {
+  const dot  = document.getElementById('status-dot');
+  const text = document.getElementById('status-text');
+  dot.className  = 'status-dot ' + state;
+  text.textContent = msg;
+}
+
+// ---- EVAL ----
+function buildEvalRows() {
+  const container = document.getElementById('eval-rows');
+  container.innerHTML = '';
+  students.forEach(no => {
+    // eval row
+    const row = document.createElement('div');
+    row.className = 'eval-row';
+    row.id = `row-${no}`;
+    row.innerHTML = `
+      <div class="student-no">${no}</div>
+      ${miniStars(no,'c')}
+      ${miniStars(no,'d')}
+      ${miniStars(no,'i')}
+      <div class="row-total" id="total-${no}">—</div>
+      <div style="font-size:11px;color:var(--danger);text-align:center" id="cmt-req-${no}" title="コメント必須"></div>
+    `;
+    // comment row（常時表示）
+    const cmt = document.createElement('div');
+    cmt.className = 'cmt-row open';
+    cmt.id = `cmt-${no}`;
+    cmt.innerHTML = `
+      <label>💬 一言コメント <span style="color:var(--danger)">※必須</span></label>
+      <textarea id="comment-${no}" placeholder="${no}番の作品への一言を書いてください…"></textarea>
+    `;
+    container.appendChild(row);
+    container.appendChild(cmt);
+
+    // star events
+    // コメント入力時にエラーボーダー解除
+    cmt.querySelector('textarea').addEventListener('input', function() {
+      this.style.borderColor = '';
+    });
+    ['c','d','i'].forEach(cat => {
+      row.querySelectorAll(`input[name="${no}-${cat}"]`).forEach(r => {
+        r.addEventListener('change', () => updateTotal(no));
+      });
+    });
+  });
+}
+
+function miniStars(no, cat) {
+  return `<div class="mini-stars">${[5,4,3,2,1].map(v =>
+    `<input type="radio" name="${no}-${cat}" id="${no}-${cat}-${v}" value="${v}"><label for="${no}-${cat}-${v}">★</label>`
+  ).join('')}</div>`;
+}
+
+function getVal(no, cat) {
+  const el = document.querySelector(`input[name="${no}-${cat}"]:checked`);
+  return el ? parseInt(el.value) : null;
+}
+
+function updateTotal(no) {
+  const c = getVal(no,'c'), d = getVal(no,'d'), i = getVal(no,'i');
+  document.getElementById(`total-${no}`).textContent = (c&&d&&i) ? c+d+i : '—';
+}
+
+// ---- 全件送信 ----
+async function saveAllEval() {
+  const reviewer = getReviewer(); if (!reviewer) return;
+  if (GAS_URL === 'YOUR_GAS_WEB_APP_URL_HERE') { showToast('⚠️ GAS_URLを設定してください'); return; }
+
+  const targets = students.filter(no => {
+    const c=getVal(no,'c'), d=getVal(no,'d'), i=getVal(no,'i');
+    return c && d && i;
+  });
+  if (targets.length === 0) { showToast('⚠️ 少なくとも1件★をつけてください'); return; }
+
+  // コメント必須チェック
+  const missing = targets.filter(no => {
+    const cmt = (document.getElementById(`comment-${no}`) || {}).value || '';
+    return cmt.trim() === '';
+  });
+  if (missing.length > 0) {
+    // 未入力行をハイライト
+    missing.forEach(no => {
+      const ta = document.getElementById(`comment-${no}`);
+      if (ta) { ta.style.borderColor = 'var(--danger)'; ta.focus(); }
+    });
+    showToast(`⚠️ ${missing.join(', ')} のコメントを入力してください`);
+    return;
+  }
+  // ハイライトリセット
+  targets.forEach(no => {
+    const ta = document.getElementById(`comment-${no}`);
+    if (ta) ta.style.borderColor = '';
+  });
+
+  const btn = document.getElementById('save-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>送信中…';
+  setStatus('', '送信中…');
+
+  let ok = 0, fail = 0;
+  for (const no of targets) {
+    const c = getVal(no,'c'), d = getVal(no,'d'), i = getVal(no,'i');
+    const comment = (document.getElementById(`comment-${no}`) || {}).value || '';
+    try {
+      const res = await gasPost({ action:'saveEval', reviewer, no, c, d, i, comment });
+      if (res.ok) ok++; else fail++;
+    } catch { fail++; }
+  }
+
+  btn.disabled = false;
+  btn.textContent = '✅ 全件送信';
+  if (fail === 0) {
+    setStatus('ok', `送信完了 ${ok}件`);
+    showToast(`✅ ${ok}件送信しました！`);
+  } else {
+    setStatus('err', `${fail}件失敗`);
+    showToast(`⚠️ ${ok}件成功 / ${fail}件失敗`);
+  }
+}
+
+// ---- VOTE ----
+function buildVoteGrid() {
+  const grid = document.getElementById('vote-grid');
+  grid.innerHTML = '';
+  students.forEach(no => {
+    const chip = document.createElement('div');
+    chip.className = 'vote-chip';
+    chip.id = `vc-${no}`;
+    chip.textContent = no;
+    chip.onclick = () => toggleVote(no);
+    grid.appendChild(chip);
+  });
+  updateVoteSel();
+}
+
+function toggleVote(no) {
+  if (myVotes.includes(no)) {
+    myVotes = myVotes.filter(v => v !== no);
+  } else {
+    if (myVotes.length >= MAX_VOTE) { showToast(`⚠️ 最大${MAX_VOTE}作品まで`); return; }
+    myVotes.push(no);
+  }
+  document.getElementById(`vc-${no}`).classList.toggle('sel', myVotes.includes(no));
+  updateVoteSel();
+}
+
+function updateVoteSel() {
+  document.getElementById('vote-sel-count').textContent = `${myVotes.length} / ${MAX_VOTE}`;
+}
+
+function clearVote() { myVotes = []; buildVoteGrid(); }
+
+async function saveVote() {
+  const reviewer = getReviewer(); if (!reviewer) return;
+  if (GAS_URL === 'YOUR_GAS_WEB_APP_URL_HERE') { showToast('⚠️ GAS_URLを設定してください'); return; }
+  if (myVotes.length === 0) { showToast('⚠️ 1作品以上選んでください'); return; }
+  try {
+    const res = await gasPost({ action:'saveVote', reviewer, votes: myVotes });
+    if (res.ok) {
+      showToast(`🏆 投票完了！ ${myVotes.join(', ')}`);
+      setStatus('ok', '投票送信済み');
+    }
+  } catch { showToast('⚠️ 送信に失敗しました'); setStatus('err','送信失敗'); }
+}
+
+// ---- RESULTS ----
+async function loadResults() {
+  if (GAS_URL === 'YOUR_GAS_WEB_APP_URL_HERE') { showToast('⚠️ GAS_URLを設定してください'); return; }
+  document.getElementById('load-spinner').style.display = '';
+  try {
+    const url = GAS_URL + '?action=getAll&t=' + Date.now();
+    const res = await fetch(url);
+    cachedResult = await res.json();
+    renderResults(cachedResult);
+    document.getElementById('last-update').textContent =
+      '最終更新: ' + new Date().toLocaleTimeString('ja-JP');
+  } catch(e) {
+    showToast('⚠️ データ取得に失敗しました');
+  }
+  document.getElementById('load-spinner').style.display = 'none';
+}
+
+function renderResults(data) {
+  // score ranking
+  const scoreArr = students.map(no => {
+    const s = data.scores[no] || {};
+    return { no, sum: s.sum||0, count: s.count||0, comments: s.comments||[] };
+  }).sort((a,b) => b.sum - a.sum);
+  const maxSum = scoreArr[0]?.sum || 1;
+
+  const scoreEl = document.getElementById('score-rank');
+  if (scoreArr.filter(s=>s.sum>0).length === 0) {
+    scoreEl.innerHTML = '<p style="color:var(--muted);font-size:13px;text-align:center;padding:12px">データなし</p>';
+  } else {
+    scoreEl.innerHTML = scoreArr.slice(0,10).map((s,rank) => `
+      <div class="rank-item">
+        <div class="rank-meta">
+          <span><span class="rank-pos">${rank+1}.</span><span class="rank-no">${s.no}</span>
+            <span style="font-size:11px;color:var(--muted);margin-left:6px">(${s.count}件)</span></span>
+          <span class="rank-val">${s.sum} pt</span>
+        </div>
+        <div class="bar-track"><div class="bar-fill" style="width:${s.sum/maxSum*100}%"></div></div>
+        ${s.comments.length ? `<div class="comments-box">${s.comments.map(c=>`<div class="comment-item">「${esc(c)}」</div>`).join('')}</div>` : ''}
+      </div>
+    `).join('');
+  }
+
+  // vote ranking
+  const voteArr = students.map(no => ({ no, count: data.votes[no]||0 }))
+    .sort((a,b) => b.count - a.count);
+  const maxVote = voteArr[0]?.count || 1;
+
+  const voteEl = document.getElementById('vote-rank');
+  if (voteArr.filter(v=>v.count>0).length === 0) {
+    voteEl.innerHTML = '<p style="color:var(--muted);font-size:13px;text-align:center;padding:12px">データなし</p>';
+  } else {
+    voteEl.innerHTML = voteArr.slice(0,10).map((v,rank) => `
+      <div class="rank-item">
+        <div class="rank-meta">
+          <span><span class="rank-pos">${rank+1}.</span><span class="rank-no">${v.no}</span></span>
+          <span class="rank-val">${v.count} 票</span>
+        </div>
+        <div class="bar-track"><div class="bar-fill" style="width:${v.count/maxVote*100}%"></div></div>
+      </div>
+    `).join('');
+  }
+}
+
+// ---- CSV export ----
+function exportCSV() {
+  if (!cachedResult) { showToast('先に「最新データ取得」してください'); return; }
+  const data = cachedResult;
+  const rows = [['出席番号','スコア合計','評価件数','得票数','コメント一覧']];
+  students.forEach(no => {
+    const s = data.scores[no] || {};
+    rows.push([no, s.sum||0, s.count||0, data.votes[no]||0, (s.comments||[]).join(' / ')]);
+  });
+  const csv = rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob = new Blob(['\uFEFF'+csv], {type:'text/csv;charset=utf-8;'});
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url; a.download = `集計_${new Date().toLocaleDateString('ja-JP').replace(/\//g,'-')}.csv`;
+  a.click(); URL.revokeObjectURL(url);
+  showToast('📊 CSVダウンロード開始');
+}
+
+// ---- Password ----
+// ★ ここでパスワードを変更できます ★
+const TEACHER_PW = 'teacher2026';
+
+let pwUnlocked = false;
+
+function askPassword() {
+  if (pwUnlocked) { switchTab('result'); return; }
+  const modal = document.getElementById('pw-modal');
+  modal.style.display = 'flex';
+  document.getElementById('pw-input').value = '';
+  document.getElementById('pw-err').textContent = '';
+  setTimeout(() => document.getElementById('pw-input').focus(), 100);
+}
+
+function checkPassword() {
+  const val = document.getElementById('pw-input').value;
+  if (val === TEACHER_PW) {
+    pwUnlocked = true;
+    closePwModal();
+    switchTab('result');
+  } else {
+    document.getElementById('pw-err').textContent = '❌ パスワードが違います';
+    document.getElementById('pw-input').value = '';
+    document.getElementById('pw-input').focus();
+  }
+}
+
+function closePwModal() {
+  document.getElementById('pw-modal').style.display = 'none';
+}
+
+// ---- Helpers ----
+function getReviewer() {
+  const v = document.getElementById('my-no').value.trim();
+  if (!v) { showToast('⚠️ 出席番号を入力してください'); return null; }
+  return v.padStart(4,'0');
+}
+
+async function gasPost(body) {
+  const res = await fetch(GAS_URL, {
+    method: 'POST',
+    body: JSON.stringify(body)
+  });
+  return res.json();
+}
+
+function switchTab(tab) {
+  document.querySelectorAll('.tab-btn').forEach((b,i)=>{
+    b.classList.toggle('active', ['eval','vote','result'][i]===tab);
+  });
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById(`panel-${tab}`).classList.add('active');
+  if (tab === 'result') loadResults();
+}
+
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(t._t);
+  t._t = setTimeout(()=>t.classList.remove('show'), 2800);
+}
+</script>
+</body>
+</html>
